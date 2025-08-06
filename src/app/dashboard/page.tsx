@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PlusCircle, Edit, Trash2, LogOut, User, Search, Filter, Calendar, Eye, X } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
+import AvatarDropdown from '../components/AvatarDropdown'
 
 interface Post {
   id: string
@@ -192,20 +193,14 @@ export default function Dashboard() {
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
-                <User className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-700">{session?.user?.name}</span>
-                <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
-                  {session?.user?.role}
-                </span>
-              </div>
-              <button
-                onClick={() => signOut()}
-                className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="text-sm">Logout</span>
-              </button>
+              <AvatarDropdown
+                user={{
+                  name: session?.user?.name,
+                  email: session?.user?.email,
+                  image: session?.user?.image,
+                  role: session?.user?.role
+                }}
+              />
             </div>
           </div>
         </div>
