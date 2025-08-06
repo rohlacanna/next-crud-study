@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { PlusCircle, Edit, Trash2, LogOut, User } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { PlusCircle, Edit, Trash2, LogOut, User, Search, Filter, Calendar, Eye, X } from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
 
 interface Post {
   id: string
@@ -23,8 +25,10 @@ export default function Dashboard() {
   const router = useRouter()
   const [posts, setPosts] = useState<Post[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [editingPost, setEditingPost] = useState<Post | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterPublished, setFilterPublished] = useState<'all' | 'published' | 'draft'>('all')
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -52,6 +56,7 @@ export default function Dashboard() {
       setPosts(data.posts || [])
     } catch (error) {
       console.error('Error fetching posts:', error)
+      toast.error('Failed to load posts')
     } finally {
       setIsLoading(false)
     }
@@ -59,6 +64,8 @@ export default function Dashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const loadingToast = toast.loading(editingPost ? 'Updating post...' : 'Creating post...')
 
     try {
       const url = editingPost ? `/api/posts/${editingPost.id}` : '/api/posts'
@@ -74,12 +81,17 @@ export default function Dashboard() {
 
       if (response.ok) {
         await fetchPosts()
-        setShowCreateForm(false)
+        setShowModal(false)
         setEditingPost(null)
         setFormData({ title: '', content: '', published: false })
+        toast.success(editingPost ? 'Post updated successfully!' : 'Post created successfully!', {
+          id: loadingToast
+        })
+      } else {
+        throw new Error('Failed to save post')
       }
     } catch (error) {
-      console.error('Error saving post:', error)
+      toast.error('Something went wrong!', { id: loadingToast })
     }
   }
 
@@ -90,11 +102,13 @@ export default function Dashboard() {
       content: post.content || '',
       published: post.published
     })
-    setShowCreateForm(true)
+    setShowModal(true)
   }
 
-  const handleDelete = async (postId: string) => {
-    if (!confirm('Are you sure you want to delete this post?')) return
+  const handleDelete = async (postId: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"?`)) return
+
+    const loadingToast = toast.loading('Deleting post...')
 
     try {
       const response = await fetch(`/api/posts/${postId}`, {
@@ -103,22 +117,56 @@ export default function Dashboard() {
 
       if (response.ok) {
         await fetchPosts()
+        toast.success('Post deleted successfully!', { id: loadingToast })
+      } else {
+        throw new Error('Failed to delete post')
       }
     } catch (error) {
-      console.error('Error deleting post:', error)
+      toast.error('Failed to delete post', { id: loadingToast })
     }
   }
 
-  const cancelEdit = () => {
-    setShowCreateForm(false)
+  const openCreateModal = () => {
+    setEditingPost(null)
+    setFormData({ title: '', content: '', published: false })
+    setShowModal(true)
+  }
+
+  const closeModal = () => {
+    setShowModal(false)
     setEditingPost(null)
     setFormData({ title: '', content: '', published: false })
   }
 
+  // Filter posts
+  const filteredPosts = posts.filter(post => {
+    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+
+    const matchesFilter = filterPublished === 'all' ||
+      (filterPublished === 'published' && post.published) ||
+      (filterPublished === 'draft' && !post.published)
+
+    return matchesSearch && matchesFilter
+  })
+
   if (status === 'loading' || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <div className="max-w-7xl mx-auto p-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-300 rounded w-1/4 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl p-6 shadow-sm">
+                  <div className="h-6 bg-gray-300 rounded w-3/4 mb-3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -128,173 +176,256 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <Toaster position="top-right" />
+
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Dashboard
+              </h1>
+              <span className="text-sm text-gray-500">
+                {filteredPosts.length} {filteredPosts.length === 1 ? 'post' : 'posts'}
+              </span>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <User className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg">
+                <User className="h-4 w-4 text-gray-400" />
                 <span className="text-sm text-gray-700">{session?.user?.name}</span>
-                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
                   {session?.user?.role}
                 </span>
               </div>
               <button
                 onClick={() => signOut()}
-                className="flex items-center space-x-2 text-gray-700 hover:text-red-600 transition-colors"
+                className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-lg"
               >
-                <LogOut className="h-5 w-5" />
-                <span>Logout</span>
+                <LogOut className="h-4 w-4" />
+                <span className="text-sm">Logout</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Create Button */}
-          <div className="mb-6">
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors"
+      <main className="max-w-7xl mx-auto p-8">
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <button
+            onClick={openCreateModal}
+            className="flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            <PlusCircle className="h-5 w-5" />
+            <span>New Post</span>
+          </button>
+
+          <div className="flex flex-1 gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search posts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white/80 backdrop-blur-sm"
+              />
+            </div>
+
+            <select
+              value={filterPublished}
+              onChange={(e) => setFilterPublished(e.target.value as any)}
+              className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/80 backdrop-blur-sm"
             >
-              <PlusCircle className="h-5 w-5" />
-              <span>New Post</span>
-            </button>
-          </div>
-
-          {/* Create/Edit Form */}
-          {showCreateForm && (
-            <div className="bg-white p-6 rounded-lg shadow mb-6">
-              <h2 className="text-xl font-semibold mb-4">
-                {editingPost ? 'Edit Post' : 'Create New Post'}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Content
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="published"
-                    checked={formData.published}
-                    onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="published" className="ml-2 block text-sm text-gray-900">
-                    Published
-                  </label>
-                </div>
-                <div className="flex space-x-4">
-                  <button
-                    type="submit"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors"
-                  >
-                    {editingPost ? 'Update' : 'Create'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          {/* Posts List */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <div className="px-4 py-5 sm:px-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Posts</h3>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">
-                Manage your blog posts
-              </p>
-            </div>
-            <ul className="divide-y divide-gray-200">
-              {posts.length === 0 ? (
-                <li className="px-4 py-6 text-center text-gray-500">
-                  No posts yet. Create your first post!
-                </li>
-              ) : (
-                posts.map((post) => (
-                  <li key={post.id} className="px-4 py-4 hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-indigo-600 truncate">
-                            {post.title}
-                          </p>
-                          <div className="ml-2 flex-shrink-0 flex">
-                            <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${post.published
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                              {post.published ? 'Published' : 'Draft'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-2 sm:flex sm:justify-between">
-                          <div className="sm:flex">
-                            <p className="flex items-center text-sm text-gray-500">
-                              {post.content ? post.content.substring(0, 100) + '...' : 'No content'}
-                            </p>
-                          </div>
-                          <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <p>
-                              by {post.author.name || post.author.email} • {new Date(post.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="ml-6 flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(post)}
-                          className="text-indigo-600 hover:text-indigo-900 p-2 rounded"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(post.id)}
-                          className="text-red-600 hover:text-red-900 p-2 rounded"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
+              <option value="all">All Posts</option>
+              <option value="published">Published</option>
+              <option value="draft">Drafts</option>
+            </select>
           </div>
         </div>
+
+        {/* Posts Grid */}
+        <AnimatePresence mode="wait">
+          {filteredPosts.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-16"
+            >
+              <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+                <PlusCircle className="h-12 w-12 text-indigo-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No posts found</h3>
+              <p className="text-gray-500 mb-6">
+                {searchTerm ? 'Try adjusting your search terms' : 'Create your first post to get started!'}
+              </p>
+              {!searchTerm && (
+                <button
+                  onClick={openCreateModal}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl transition-colors"
+                >
+                  Create First Post
+                </button>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {filteredPosts.map((post, index) => (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-100 group"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                        {post.title}
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${post.published
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                          {post.published ? 'Published' : 'Draft'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleEdit(post)}
+                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(post.id, post.title)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {post.content && (
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                      {post.content}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100">
+                    <div className="flex items-center space-x-1">
+                      <User className="h-3 w-3" />
+                      <span>{post.author.name || post.author.email}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal */}
+        <AnimatePresence>
+          {showModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={closeModal}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {editingPost ? 'Edit Post' : 'Create New Post'}
+                  </h2>
+                  <button
+                    onClick={closeModal}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Enter post title..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Content
+                    </label>
+                    <textarea
+                      rows={8}
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                      placeholder="Write your post content..."
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="published"
+                      checked={formData.published}
+                      onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="published" className="ml-3 block text-sm text-gray-900">
+                      Publish immediately
+                    </label>
+                  </div>
+
+                  <div className="flex space-x-4 pt-4">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl transition-all duration-200 font-medium"
+                    >
+                      {editingPost ? 'Update Post' : 'Create Post'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="px-6 py-3 text-gray-600 hover:text-gray-800 border border-gray-200 hover:border-gray-300 rounded-xl transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   )
