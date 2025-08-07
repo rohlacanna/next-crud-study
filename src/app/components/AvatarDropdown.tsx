@@ -70,22 +70,22 @@ export default function AvatarDropdown({ user }: AvatarDropdownProps) {
           )}
 
           {/* Online indicator */}
-          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
         </div>
 
         {/* User Info */}
         <div className="hidden md:block text-left">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-32">
+          <p className="text-sm font-medium text-foreground truncate max-w-32">
             {user.name || user.email}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+          <p className="text-xs text-muted-foreground capitalize">
             {user.role?.toLowerCase()}
           </p>
         </div>
 
         {/* Dropdown Arrow */}
         <ChevronDown
-          className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''
+          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''
             }`}
         />
       </motion.button>
@@ -98,10 +98,10 @@ export default function AvatarDropdown({ user }: AvatarDropdownProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 py-2 z-50 dark:bg-gray-800/95 dark:border-gray-600"
+            className="absolute right-0 mt-2 w-64 bg-popover/95 backdrop-blur-md rounded-2xl shadow-xl border border-border py-2 z-50"
           >
             {/* User Info Header */}
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-600">
+            <div className="px-4 py-3 border-b border-border">
               <div className="flex items-center space-x-3">
                 {user.image ? (
                   <img
@@ -116,13 +116,13 @@ export default function AvatarDropdown({ user }: AvatarDropdownProps) {
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  <p className="text-sm font-semibold text-popover-foreground truncate">
                     {user.name || 'Anonymous User'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {user.email}
                   </p>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 mt-1">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary mt-1">
                     {user.role}
                   </span>
                 </div>
@@ -132,8 +132,8 @@ export default function AvatarDropdown({ user }: AvatarDropdownProps) {
             {/* Menu Items */}
             <div className="py-2">
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(99, 102, 241, 0.05)' }}
-                className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors"
+                whileHover={{ backgroundColor: 'hsl(var(--accent))' }}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-popover-foreground hover:text-primary transition-colors"
                 onClick={() => {
                   setIsOpen(false)
                   // TODO: Implementar página de perfil
@@ -144,8 +144,8 @@ export default function AvatarDropdown({ user }: AvatarDropdownProps) {
               </motion.button>
 
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(99, 102, 241, 0.05)' }}
-                className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors"
+                whileHover={{ backgroundColor: 'hsl(var(--accent))' }}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-popover-foreground hover:text-primary transition-colors"
                 onClick={() => {
                   setIsOpen(false)
                   // TODO: Implementar upload de avatar
@@ -156,8 +156,8 @@ export default function AvatarDropdown({ user }: AvatarDropdownProps) {
               </motion.button>
 
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(99, 102, 241, 0.05)' }}
-                className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors"
+                whileHover={{ backgroundColor: 'hsl(var(--accent))' }}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-popover-foreground hover:text-primary transition-colors"
                 onClick={() => {
                   setIsOpen(false)
                   // TODO: Implementar configurações
@@ -167,11 +167,11 @@ export default function AvatarDropdown({ user }: AvatarDropdownProps) {
                 <span>Settings</span>
               </motion.button>
 
-              <div className="border-t border-gray-100 dark:border-gray-600 my-2"></div>
+              <div className="border-t border-border my-2"></div>
 
               <motion.button
-                whileHover={{ backgroundColor: 'rgba(239, 68, 68, 0.05)' }}
-                className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 transition-colors"
+                whileHover={{ backgroundColor: 'hsl(var(--destructive) / 0.05)' }}
+                className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-popover-foreground hover:text-destructive transition-colors"
                 onClick={handleSignOut}
               >
                 <LogOut className="h-4 w-4" />
