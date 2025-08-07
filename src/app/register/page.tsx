@@ -38,8 +38,8 @@ export default function Register() {
         router.push('/login')
       }, 2000)
 
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setIsLoading(false)
     }

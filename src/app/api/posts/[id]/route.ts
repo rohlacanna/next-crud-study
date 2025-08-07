@@ -7,11 +7,12 @@ const prisma = new PrismaClient()
 // GET - Buscar post específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   try {
     const post = await prisma.post.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: {
         author: {
           select: {
@@ -42,8 +43,9 @@ export async function GET(
 // PUT - Atualizar post
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   try {
     const session = await getServerSession()
 
@@ -65,7 +67,7 @@ export async function PUT(
 
     // Verificar se o post existe
     const existingPost = await prisma.post.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: { author: true }
     })
 
@@ -85,7 +87,7 @@ export async function PUT(
     }
 
     const updatedPost = await prisma.post.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: {
         title,
         content: content || '',
@@ -114,8 +116,9 @@ export async function PUT(
 // DELETE - Deletar post
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const resolvedParams = await params
   try {
     const session = await getServerSession()
 
@@ -128,7 +131,7 @@ export async function DELETE(
 
     // Verificar se o post existe
     const existingPost = await prisma.post.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: { author: true }
     })
 
@@ -148,7 +151,7 @@ export async function DELETE(
     }
 
     await prisma.post.delete({
-      where: { id: params.id }
+      where: { id: resolvedParams.id }
     })
 
     return NextResponse.json(
