@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { PlusCircle, Edit, Trash2, LogOut, User, Search, Filter, Calendar, Eye, X } from 'lucide-react'
+import { PlusCircle, Edit, Trash2, User, Search, Calendar, X } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 import AvatarDropdown from '../components/AvatarDropdown'
 import { ModeToggle } from '../components/ModeToggle'
@@ -29,6 +29,8 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingPost, setEditingPost] = useState<Post | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [postToDelete, setPostToDelete] = useState<{ id: string; title: string } | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterPublished, setFilterPublished] = useState<'all' | 'published' | 'draft'>('all')
   const [formData, setFormData] = useState({
@@ -92,7 +94,7 @@ export default function Dashboard() {
       } else {
         throw new Error('Failed to save post')
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Something went wrong!', { id: loadingToast })
     }
   }
@@ -107,13 +109,18 @@ export default function Dashboard() {
     setShowModal(true)
   }
 
-  const handleDelete = async (postId: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return
+  const handleDelete = (postId: string, title: string) => {
+    setPostToDelete({ id: postId, title })
+    setShowDeleteModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!postToDelete) return
 
     const loadingToast = toast.loading('Deleting post...')
 
     try {
-      const response = await fetch(`/api/posts/${postId}`, {
+      const response = await fetch(`/api/posts/${postToDelete.id}`, {
         method: 'DELETE',
       })
 
@@ -123,9 +130,17 @@ export default function Dashboard() {
       } else {
         throw new Error('Failed to delete post')
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to delete post', { id: loadingToast })
+    } finally {
+      setShowDeleteModal(false)
+      setPostToDelete(null)
     }
+  }
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false)
+    setPostToDelete(null)
   }
 
   const openCreateModal = () => {
@@ -288,8 +303,8 @@ export default function Dashboard() {
                       </h3>
                       <div className="flex items-center space-x-2">
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${post.published
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-yellow-100 text-yellow-700'
                           }`}>
                           {post.published ? 'Published' : 'Draft'}
                         </span>
@@ -347,16 +362,16 @@ export default function Dashboard() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                className="bg-background rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border shadow-lg"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  <h2 className="text-2xl font-bold text-foreground">
                     {editingPost ? 'Edit Post' : 'Create New Post'}
                   </h2>
                   <button
                     onClick={closeModal}
-                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="p-2 text-muted-foreground hover:text-popover-foreground hover:bg-accent rounded-lg transition-colors"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -364,7 +379,7 @@ export default function Dashboard() {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Title *
                     </label>
                     <input
@@ -372,20 +387,20 @@ export default function Dashboard() {
                       required
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                      className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground placeholder:text-muted-foreground"
                       placeholder="Enter post title..."
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Content
                     </label>
                     <textarea
                       rows={8}
                       value={formData.content}
                       onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                      className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none bg-background text-foreground placeholder:text-muted-foreground"
                       placeholder="Write your post content..."
                     />
                   </div>
@@ -398,7 +413,7 @@ export default function Dashboard() {
                       onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
                       className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="published" className="ml-3 block text-sm text-gray-900 dark:text-gray-300">
+                    <label htmlFor="published" className="ml-3 block text-sm text-foreground">
                       Publish immediately
                     </label>
                   </div>
@@ -413,12 +428,60 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="px-6 py-3 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 rounded-xl transition-colors"
+                      className="px-6 py-3 text-muted-foreground hover:text-foreground border border-border hover:bg-accent rounded-xl transition-colors"
                     >
                       Cancel
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <AnimatePresence>
+          {showDeleteModal && postToDelete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={cancelDelete}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-background rounded-2xl p-6 w-full max-w-md border border-border shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-50 dark:bg-red-900/20 rounded-full">
+                  <Trash2 className="w-6 h-6 text-red-600" />
+                </div>
+
+                <h3 className="text-lg font-semibold text-foreground text-center mb-2">
+                  Delete Post
+                </h3>
+
+                <p className="text-muted-foreground text-center mb-6">
+                  Are you sure you want to delete &quot;<span className="font-medium text-foreground">{postToDelete.title}</span>&quot;? This action cannot be undone.
+                </p>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={cancelDelete}
+                    className="flex-1 px-4 py-2.5 text-muted-foreground hover:text-foreground border border-border hover:bg-accent rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+                  >
+                    Delete
+                  </button>
+                </div>
               </motion.div>
             </motion.div>
           )}

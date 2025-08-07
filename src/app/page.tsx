@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, BookOpen, Users, Zap, Shield, Edit3, Globe } from 'lucide-react'
+import { ArrowRight, BookOpen, Zap, Shield, Edit3, Globe } from 'lucide-react'
 
 export default function Home() {
   const { data: session, status } = useSession()

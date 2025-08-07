@@ -29,7 +29,7 @@ export default function Login() {
       } else {
         router.push('/dashboard')
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Something went wrong')
     } finally {
       setIsLoading(false)

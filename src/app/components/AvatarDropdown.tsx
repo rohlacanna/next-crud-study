@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Settings, LogOut, ChevronDown, Camera } from 'lucide-react'
 import { signOut } from 'next-auth/react'
+import Image from 'next/image'
 
 interface AvatarDropdownProps {
   user: {
@@ -58,9 +59,11 @@ export default function AvatarDropdown({ user }: AvatarDropdownProps) {
         {/* Avatar Image or Initials */}
         <div className="relative">
           {user.image ? (
-            <img
+            <Image
               src={user.image}
               alt={user.name || 'User'}
+              width={32}
+              height={32}
               className="w-8 h-8 rounded-lg object-cover"
             />
           ) : (
@@ -104,9 +107,11 @@ export default function AvatarDropdown({ user }: AvatarDropdownProps) {
             <div className="px-4 py-3 border-b border-border">
               <div className="flex items-center space-x-3">
                 {user.image ? (
-                  <img
+                  <Image
                     src={user.image}
                     alt={user.name || 'User'}
+                    width={48}
+                    height={48}
                     className="w-12 h-12 rounded-xl object-cover"
                   />
                 ) : (
